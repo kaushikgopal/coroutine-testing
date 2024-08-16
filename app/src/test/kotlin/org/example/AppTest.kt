@@ -3,50 +3,45 @@
  */
 package org.example
 
-import app.cash.turbine.test
+import app.cash.turbine.turbineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.advanceTimeBy
-import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import kotlin.time.Duration.Companion.seconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AppTest {
 
-  @Test
-  fun appHasAGreeting() {
-    val app = App()
-    assertThat(app.greeting).isEqualTo("Hello World!")
-  }
-
-  @DisplayName("testing first item emitted")
+  @DisplayName("testing item emitted after delay - using turbine")
   @Test
   fun test1() = runTest {
-    val app = App()
-    app.myFlow().test {
-      assertThat(awaitItem()).isEqualTo(1)
+    turbineScope {
+      val app = App()
+      val items = app.stateFlow.testIn(this)
+
+      app.start()
+      assertThat(items.awaitItem()).isEqualTo(0)
+      assertThat(items.awaitItem()).isEqualTo(1)
+      assertThat(items.awaitItem()).isEqualTo(10)
     }
   }
 
-  @DisplayName("testing item emitted after delay")
-  @Test
-  fun test2() = runTest {
-    val app = App()
-    val list = mutableListOf<Int>()
-
-    backgroundScope.launch {
-      app.myFlow().collect { list.add(it) }
-
-      runCurrent()
-      assertThat(list.size).isEqualTo(1)
-      assertThat(list[0]).isEqualTo(1)
-      advanceTimeBy((3.1).seconds)
-      assertThat(list.size).isEqualTo(2)
-      assertThat(list[0]).isEqualTo(10)
-    }
-  }
+//  @DisplayName("testing item emitted after delay")
+//  @Test
+//  fun test1() = runTest {
+//    val app = App()
+//    val list = mutableListOf<Int>()
+//
+//    backgroundScope.launch {
+//      app.myFlow().collect { list.add(it) }
+//
+//      runCurrent()
+//      assertThat(list.size).isEqualTo(1)
+//      assertThat(list[0]).isEqualTo(1)
+//      advanceTimeBy((3.1).seconds)
+//      assertThat(list.size).isEqualTo(2)
+//      assertThat(list[0]).isEqualTo(10)
+//    }
+//  }
 }
