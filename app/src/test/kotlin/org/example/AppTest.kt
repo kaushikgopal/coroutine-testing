@@ -15,12 +15,13 @@ import kotlin.time.Duration.Companion.seconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AppTest {
+
   @DisplayName("test 1 - item emit with delay - fails")
   @Test
-  fun test1() = runTest {
-    val app = App()
-    app.stateFlow.test {
-      app.start()
+  fun test1() = runTest { // @TestScope
+    val app = App(this)
+    app.stateFlow.test { // @turbineScope - specific to Turbine
+      app.start()  // .launch on CustomScope@Dispatchers.IO
       assertThat(awaitItem()).isEqualTo(0)
       assertThat(awaitItem()).isEqualTo(1)
       assertThat(awaitItem()).isEqualTo(10)
@@ -32,7 +33,7 @@ class AppTest {
   @Test
   fun test2() = runTest {
     turbineScope {
-      val app = App()
+    val app = App(this)
       val items = app.stateFlow.testIn(this)
       app.start()
       assertThat(items.awaitItem()).isEqualTo(0)

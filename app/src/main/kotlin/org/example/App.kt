@@ -11,14 +11,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.seconds
 
-class App {
+class App(private val scope: CoroutineScope = CoroutineScope(Dispatchers.IO)) {
 
   private val _stateFlow = MutableStateFlow(0)
   val stateFlow: Flow<Int> = _stateFlow
 
 
   fun start() {
-    CoroutineScope(Dispatchers.Default).launch {
+    scope.launch {
       _stateFlow.emit(1)
       delay(3.seconds)
       _stateFlow.emit(10)
