@@ -47,7 +47,10 @@ class Cache(
   val extendedCache = mutableListOf<Int>()
 
   fun put(value: Int) {
-    if (cache.size > 0) {
+    val cacheSize = cache.size
+
+    if (cacheSize > 0) {
+      if (extendedCache.size == 5) extendedCache.dropLast(cacheSize)
       extendedCache.addAll(cache)
     }
     cache.add(value)
