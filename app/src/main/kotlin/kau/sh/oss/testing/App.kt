@@ -3,24 +3,34 @@
  */
 package kau.sh.oss.testing
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.seconds
 
-class App {
-  val greeting: String
-    get() {
-      return "Hello World!"
-    }
+class App(private val scope: CoroutineScope = CoroutineScope(Dispatchers.IO)) {
 
-  fun myFlow(): Flow<Int> = flow {
-    emit(1)
-    delay(3.seconds)
-    emit(10)
-  }
+    val greeting: String
+        get() {
+            return "Coroutine Testing examples - see tests"
+        }
+
+    private val _stateFlow = MutableStateFlow(0)
+    val stateFlow: Flow<Int> = _stateFlow
+
+    fun start() {
+        scope.launch {
+            _stateFlow.emit(1)
+            delay(3.seconds)
+            _stateFlow.emit(10)
+        }
+    }
 }
 
 fun main() {
-  println(App().greeting)
+    println(App().greeting)
 }
