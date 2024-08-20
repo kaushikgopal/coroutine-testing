@@ -40,7 +40,7 @@ java {
 
 application {
   // Define the main class for the application.
-  mainClass = "org.example.AppKt"
+  mainClass = "kau.sh.oss.testing.AppKt"
 }
 
 tasks.named<Test>("test") {
