@@ -10,27 +10,61 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
+import org.jetbrains.annotations.VisibleForTesting
 import kotlin.time.Duration.Companion.seconds
 
 class App(private val scope: CoroutineScope = CoroutineScope(Dispatchers.IO)) {
 
-    val greeting: String
-        get() {
-            return "Coroutine Testing examples - see tests"
-        }
-
-    private val _stateFlow = MutableStateFlow(0)
-    val stateFlow: Flow<Int> = _stateFlow
-
-    fun start() {
-        scope.launch {
-            _stateFlow.emit(1)
-            delay(3.seconds)
-            _stateFlow.emit(10)
-        }
+  val greeting: String
+    get() {
+      return "Coroutine Testing examples - see tests"
     }
+
+  private val _stateFlow = MutableStateFlow(0)
+  val stateFlow: Flow<Int> = _stateFlow
+
+  fun start() {
+    scope.launch {
+      _stateFlow.emit(1)
+      delay(3.seconds)
+      _stateFlow.emit(10)
+    }
+  }
 }
 
 fun main() {
-    println(App().greeting)
+  println(App().greeting)
+}
+
+
+class Cache(
+  scope: CoroutineScope = CoroutineScope(Dispatchers.IO)
+) {
+  @VisibleForTesting
+  val cache = mutableListOf<Int>()
+
+  @VisibleForTesting
+  val extendedCache = mutableListOf<Int>()
+
+  fun put(value: Int) {
+    if (cache.size > 0) {
+      extendedCache.addAll(cache)
+    }
+    cache.add(value)
+  }
+
+
+  init {
+    scope.launch {
+      while (true) {
+        delay(5.seconds)
+        extendedCache.clear()
+
+        cache.forEach { extendedCache.add(it) }
+        cache.clear()
+      }
+    }
+  }
+
+
 }
