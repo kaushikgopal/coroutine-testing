@@ -3,18 +3,13 @@
  */
 package kau.sh.oss.testing
 
-import app.cash.turbine.test
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.advanceTimeBy
-import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
-import kotlin.time.Duration.Companion.seconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class TimingCacheTest {
@@ -23,9 +18,14 @@ class TimingCacheTest {
   val testRule = CoroutineTestRule()
 
   @DisplayName("adding an item should immediately put it in the cache")
-  @Disabled
   @Test
   fun test1() = runTest {
+    val cacher = Cache(
+        // this = TestScope => test will never end
+        backgroundScope
+    )
+    cacher.put(1)
+    assertThat(cacher.cache).containsExactly(1)
   }
 
   @DisplayName("every 5 seconds, an item added to cache, should move to extended cache")
