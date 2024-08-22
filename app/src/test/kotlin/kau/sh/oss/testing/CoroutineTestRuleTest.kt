@@ -13,42 +13,30 @@ import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
-import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestMethodOrder
 import org.junit.jupiter.api.extension.RegisterExtension
 import kotlin.time.Duration.Companion.seconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class CoroutineTestRuleTest {
 
-  @Nested
-  inner class DefaultDispatcherTest {
+  @Test
+  @DisplayName("cannot provide both a dispatcher and a scheduler")
+  fun test1() {
 
-    @RegisterExtension
-    val testRule = CoroutineTestRule()
-
-    @Test
-    @DisplayName("assert test schedulers are the same")
-    fun test0() = runTest {
-      assertThat(testRule.testScheduler).isEqualTo(this.testScheduler)
-    }
-
-    @Test
-    @DisplayName("advancement respected by testScope + rule extension")
-    fun test1() = runTest {
-      assertThat(currentTime).isEqualTo(0.seconds.inWholeMilliseconds)
-      assertThat(currentTime).isEqualTo(testRule.currentTestTime())
-      advanceTimeBy(2.seconds)
-      assertThat(currentTime).isEqualTo(2.seconds.inWholeMilliseconds)
-      assertThat(currentTime).isEqualTo(testRule.currentTestTime())
-    }
+    assertThatThrownBy {
+      CoroutineTestRule(
+          injectedDispatcher = UnconfinedTestDispatcher(),
+          injectedScheduler = TestCoroutineScheduler(),
+      )
+    }.isInstanceOf(IllegalArgumentException::class.java)
   }
 
 
   @Nested
   inner class InjectedSchedulerTest {
+    private val customDispatcher = UnconfinedTestDispatcher()
     private val customScheduler = TestCoroutineScheduler()
 
     @RegisterExtension
@@ -59,10 +47,48 @@ class CoroutineTestRuleTest {
     fun test0() = runTest {
       assertThat(this.testScheduler).isEqualTo(customScheduler)
       assertThat(testRule.testScheduler).isEqualTo(customScheduler)
+      assertThat(testRule.testDispatcher.scheduler).isEqualTo(customScheduler)
     }
 
     @Test
-    @DisplayName("advancement respected by testScope + rule extension")
+    @DisplayName("advancing time respected")
+    fun test1() = runTest {
+      assertThat(currentTime).isEqualTo(0.seconds.inWholeMilliseconds)
+      assertThat(currentTime).isEqualTo(testRule.currentTestTime())
+      advanceTimeBy(2.seconds)
+      assertThat(currentTime).isEqualTo(2.seconds.inWholeMilliseconds)
+      assertThat(currentTime).isEqualTo(testRule.currentTestTime())
+    }
+
+    @Test
+    @DisplayName("assert test schedulers are not the same with improper call")
+    fun test2() = runTest(customDispatcher) { // DON'T DO THIS
+
+      // notice the testRule dispatcher will be different
+      assertThat(testRule.testDispatcher).isNotEqualTo(customDispatcher)
+
+      // Notice your schedulers won't be the same either
+      // which is a big NO NO when using multiple dispatchers
+      assertThat(this.testScheduler)
+          .isEqualTo(customDispatcher.scheduler)
+          .isNotEqualTo(testRule.testScheduler) // which is ideally what we want
+    }
+  }
+
+  @Nested
+  inner class StandardUsageTest {
+
+    @RegisterExtension
+    val testRule = CoroutineTestRule()
+
+    @Test
+    @DisplayName("assert test schedulers are the same")
+    fun test0() = runTest {
+      assertThat(this.testScheduler).isEqualTo(testRule.testScheduler)
+    }
+
+    @Test
+    @DisplayName("advancing time respected")
     fun test1() = runTest {
       assertThat(currentTime).isEqualTo(0.seconds.inWholeMilliseconds)
       assertThat(currentTime).isEqualTo(testRule.currentTestTime())
@@ -72,20 +98,19 @@ class CoroutineTestRuleTest {
     }
   }
 
-
   @Nested
-  inner class CustomStandardDispatcherTest {
+  inner class InjectStandardDispatcherTest {
     private val customDispatcher = StandardTestDispatcher()
 
     @RegisterExtension
     val testRule = CoroutineTestRule(injectedDispatcher = customDispatcher)
 
-
     @Test
     @DisplayName("assert test schedulers are the same")
     fun test0() = runTest {
-      assertThat(this.testScheduler).isEqualTo(customDispatcher.scheduler)
-      assertThat(testRule.testScheduler).isEqualTo(customDispatcher.scheduler)
+      assertThat(this.testScheduler)
+          .isEqualTo(testRule.testScheduler)
+          .isEqualTo(customDispatcher.scheduler)
     }
 
     @Test
@@ -99,79 +124,7 @@ class CoroutineTestRuleTest {
   }
 
   @Nested
-  inner class CustomUnconfinedDispatcherWithSchedulerTest {
-    private val customDispatcher = UnconfinedTestDispatcher()
-
-    @RegisterExtension
-    val testRule = CoroutineTestRule(injectedScheduler = customDispatcher.scheduler)
-
-    @Test
-    @DisplayName("assert test schedulers are the same")
-    fun test0() = runTest {
-      assertThat(this.testScheduler).isEqualTo(customDispatcher.scheduler)
-      assertThat(testRule.testScheduler).isEqualTo(customDispatcher.scheduler)
-    }
-
-    @Test
-    @DisplayName("custom UnconfinedTestDispatcher respects time advancement")
-    fun test1() = runTest {
-      assertThat(0.seconds.inWholeMilliseconds).isEqualTo(currentTime)
-      advanceTimeBy(2.seconds)
-      // notice that we injected an UnconfinedTestDispatcher
-      // but the time is still advanced
-      assertThat(2.seconds.inWholeMilliseconds).isEqualTo(currentTime)
-      assertThat(currentTime).isEqualTo(testRule.currentTestTime())
-    }
-  }
-
-  @Test
-  @DisplayName("cannot provide both a dispatcher and a scheduler")
-  fun test1() {
-    assertThatThrownBy {
-      CoroutineTestRule(
-          injectedDispatcher = UnconfinedTestDispatcher(),
-          injectedScheduler = TestCoroutineScheduler(),
-      )
-    }.isInstanceOf(IllegalArgumentException::class.java)
-  }
-
-  @TestMethodOrder(MethodOrderer.MethodName::class)
-  @Nested
-  inner class CustomSchedulerUnconfinedDispatcherTest {
-    private val customDispatcher = UnconfinedTestDispatcher()
-    private val customScheduler = TestCoroutineScheduler()
-
-    @RegisterExtension
-    val testRule = CoroutineTestRule(
-        injectedScheduler = customScheduler,
-    )
-
-    @Test
-    @DisplayName("assert test schedulers are same with proper call")
-    fun test1() = runTest {
-      assertThat(this.testScheduler).isEqualTo(customScheduler)
-      assertThat(testRule.testScheduler).isEqualTo(customScheduler)
-    }
-
-    @Test
-    @DisplayName("assert test schedulers are not the same with improper call")
-    fun test2() = runTest(customDispatcher) { // DON'T DO THIS
-
-      // notice the testRule dispatcher will be different
-      assertThat(testRule.testDispatcher).isNotEqualTo(customDispatcher)
-
-
-      assertThat(testRule.testScheduler).isEqualTo(customScheduler)
-
-      // Notice your schedulers won't be the same either
-      // which is a big NO NO when using multiple dispatchers
-      assertThat(this.testScheduler).isEqualTo(customDispatcher.scheduler)
-      assertThat(customDispatcher.scheduler).isNotEqualTo(testRule.testScheduler)
-    }
-  }
-
-  @Nested
-  inner class ImproperExplicitCall {
+  inner class InjectUnconfinedDispatcherTest {
     private val customDispatcher = UnconfinedTestDispatcher()
 
     @RegisterExtension
@@ -180,8 +133,10 @@ class CoroutineTestRuleTest {
     @Test
     @DisplayName("assert test schedulers are the same")
     fun test0() = runTest {
-      assertThat(this.testScheduler).isEqualTo(customDispatcher.scheduler)
-      assertThat(testRule.testScheduler).isEqualTo(customDispatcher.scheduler)
+      assertThat(this.testScheduler)
+          .isEqualTo(testRule.testScheduler)
+          .isEqualTo(customDispatcher.scheduler)
+          .isNotInstanceOfAny(StandardTestDispatcher()::class.java)
     }
 
     @Test
@@ -193,6 +148,5 @@ class CoroutineTestRuleTest {
       assertThat(currentTime).isEqualTo(testRule.currentTestTime())
     }
   }
-
 }
 

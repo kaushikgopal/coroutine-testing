@@ -34,8 +34,12 @@ class CoroutineTestRule(
 ) : BeforeEachCallback, AfterEachCallback {
 
   init {
+    // The [TestCoroutineScheduler] always needs to be shared
+    // [TestDispatcher] is implicitly linked to a [TestCoroutineScheduler] already
+    // so we shouldn't be providing both
+
     require(injectedDispatcher == null || injectedScheduler == null) {
-      "Cannot provide both a dispatcher and a scheduler"
+      "Do not provide both a dispatcher and a scheduler"
     }
   }
 
