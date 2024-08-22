@@ -29,12 +29,12 @@ import org.junit.jupiter.api.extension.ExtensionContext
 class CoroutineTestRule(
   private val scheduler: TestCoroutineScheduler? =
       null, // if you want multiple types of dispatchers
-  private val dispatcher: TestDispatcher? = null,
+  private val injectedDispatcher: TestDispatcher? = null,
 ) : BeforeEachCallback, AfterEachCallback {
 
   val testDispatcher by lazy {
     when {
-      dispatcher != null -> dispatcher
+      injectedDispatcher != null -> injectedDispatcher
       scheduler != null -> StandardTestDispatcher(scheduler)
       else -> StandardTestDispatcher()
     }

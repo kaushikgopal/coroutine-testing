@@ -22,16 +22,19 @@ class TimingCacheTest {
   fun test1() = runTest {
     val cacher = Cache(
         // this = TestScope => test will never end
-        backgroundScope
+        backgroundScope,
     )
     cacher.put(1)
     assertThat(cacher.cache).containsExactly(1)
   }
 
-  @DisplayName("every 5 seconds, an item added to cache, should move to extended cache")
+  @DisplayName("after adding an item, in 5 seconds it should move from cache to extended cache")
   @Disabled
   @Test
   fun test2() = runTest {
+    val cacher = Cache(backgroundScope)
+    cacher.put(1)
+    cacher.put(2)
   }
 
   @DisplayName("every 5 seconds, entire extended cache is cleared")
