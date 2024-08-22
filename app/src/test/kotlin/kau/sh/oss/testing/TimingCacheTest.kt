@@ -4,12 +4,14 @@
 package kau.sh.oss.testing
 
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
+import kotlin.time.Duration.Companion.seconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class TimingCacheTest {
@@ -29,12 +31,13 @@ class TimingCacheTest {
   }
 
   @DisplayName("after adding an item, in 5 seconds it should move from cache to extended cache")
-  @Disabled
   @Test
   fun test2() = runTest {
     val cacher = Cache(backgroundScope)
-    cacher.put(1)
-    cacher.put(2)
+    cacher.put(3)
+    cacher.cache.contains(3)
+    advanceTimeBy(6.seconds)
+    cacher.extendedCache.contains(3)
   }
 
   @DisplayName("every 5 seconds, entire extended cache is cleared")
