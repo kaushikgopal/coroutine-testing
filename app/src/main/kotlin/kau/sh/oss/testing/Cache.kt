@@ -19,10 +19,14 @@ class Cache(
   fun put(value: Int) {
     val cacheSize = cache.size
 
-    if (cacheSize > 0) {
-      if (extendedCache.size == 5) extendedCache.dropLast(cacheSize)
-      extendedCache.addAll(cache)
+    if (cacheSize >= 5) {
+      val droppedItem = cache.removeFirst()
+      if (extendedCache.size >= 5) {
+        extendedCache.dropLast(5 - extendedCache.size)
+      }
+      extendedCache.add(droppedItem)
     }
+
     cache.add(value)
   }
 

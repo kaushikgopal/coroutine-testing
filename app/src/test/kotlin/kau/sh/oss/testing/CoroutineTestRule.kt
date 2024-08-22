@@ -27,18 +27,21 @@ import org.junit.jupiter.api.extension.ExtensionContext
  */
 @ExperimentalCoroutinesApi
 class CoroutineTestRule(
-  private val scheduler: TestCoroutineScheduler? =
-      null, // if you want multiple types of dispatchers
-  private val injectedDispatcher: TestDispatcher? = null,
+  injectedScheduler: TestCoroutineScheduler? = null,
+  injectedDispatcher: TestDispatcher? = null,
 ) : BeforeEachCallback, AfterEachCallback {
 
-  val testDispatcher by lazy {
-    when {
-      injectedDispatcher != null -> injectedDispatcher
-      scheduler != null -> StandardTestDispatcher(scheduler)
-      else -> StandardTestDispatcher()
-    }
+  private val testScheduler: TestCoroutineScheduler = when {
+    injectedScheduler != null -> injectedScheduler // respect user instructions first
+    injectedDispatcher != null -> injectedDispatcher.scheduler // ensure same scheduler across
+    else -> TestCoroutineScheduler()
   }
+
+  private val testDispatcher: TestDispatcher = when {
+    injectedDispatcher != null -> injectedDispatcher // respect user instructions first
+    else -> StandardTestDispatcher(testScheduler) // ensure same scheduler across
+  }
+
 
   override fun beforeEach(p0: ExtensionContext?) {
     // ⚠️ Calling this with a TestDispatcher has special behavior:

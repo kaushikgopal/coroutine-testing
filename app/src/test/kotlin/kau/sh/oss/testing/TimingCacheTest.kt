@@ -41,16 +41,35 @@ class TimingCacheTest {
   }
 
   @DisplayName("every 5 seconds, entire extended cache is cleared")
-  @Disabled
   @Test
   fun test3() = runTest {
+    val cacher = Cache(backgroundScope)
+    cacher.put(3)
+    cacher.cache.contains(3)
+    advanceTimeBy(6.seconds)
+    cacher.extendedCache.contains(3)
+    advanceTimeBy(6.seconds)
+    assertThat(cacher.extendedCache).isEmpty()
   }
 
   @DisplayName("if extended cache already has 5 items, drop oldest item, when adding new item")
-  @Disabled
   @Test
   fun test4() = runTest {
-  }
+    val cacher = Cache(backgroundScope)
+    cacher.put(1)
+    cacher.put(2)
+    cacher.put(3)
+    cacher.put(4)
+    cacher.put(5)
+    assertThat(cacher.cache.size).isEqualTo(5)
 
+    cacher.put(6)
+    assertThat(cacher.cache).contains(6, 5, 3, 4, 2)
+    assertThat(cacher.extendedCache).contains(1)
+
+    advanceTimeBy(6.seconds)
+    assertThat(cacher.cache).isEmpty()
+    assertThat(cacher.extendedCache).contains(6, 5, 3, 4, 2)
+  }
 }
 
