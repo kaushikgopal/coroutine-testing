@@ -8,39 +8,46 @@ import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
+import org.assertj.core.util.VisibleForTesting
 import org.junit.jupiter.api.extension.AfterEachCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 
 /**
- * Primary rule for Coroutine Tests.
- *
- * @constructor Create empty Test coroutine rule
- *
- * Use it as follows
+ * Primary rule for Coroutine Tests. Use it as follows:
  *
  * ```kotlin
  * class MyViewModelTest {
  *    @RegisterExtension val testRule = CoroutineTestRule()
  * }
  * ```
+ *
+ * @constructor Create empty Test coroutine rule
+ * @param injectedDispatcher If dispatcher provided, its scheduler will be prioritized
+ * @param injectedScheduler only if dispatcher is not being injected
+ *
  */
 @ExperimentalCoroutinesApi
 class CoroutineTestRule(
-  injectedScheduler: TestCoroutineScheduler? = null,
   injectedDispatcher: TestDispatcher? = null,
+  injectedScheduler: TestCoroutineScheduler? = null,
 ) : BeforeEachCallback, AfterEachCallback {
 
-  private val testScheduler: TestCoroutineScheduler = when {
-    injectedScheduler != null -> injectedScheduler // respect user instructions first
-    injectedDispatcher != null -> injectedDispatcher.scheduler // ensure same scheduler across
-    else -> TestCoroutineScheduler()
+  init {
+    require(injectedDispatcher == null || injectedScheduler == null) {
+      "Cannot provide both a dispatcher and a scheduler"
+    }
   }
 
-  private val testDispatcher: TestDispatcher = when {
-    injectedDispatcher != null -> injectedDispatcher // respect user instructions first
-    else -> StandardTestDispatcher(testScheduler) // ensure same scheduler across
+  @VisibleForTesting
+  val testDispatcher: TestDispatcher = when {
+    injectedDispatcher != null -> injectedDispatcher
+    injectedScheduler != null -> StandardTestDispatcher(injectedScheduler) // if scheduler provided
+    else -> StandardTestDispatcher() // ensure same scheduler across
   }
+
+  @VisibleForTesting
+  val testScheduler: TestCoroutineScheduler = testDispatcher.scheduler
 
 
   override fun beforeEach(p0: ExtensionContext?) {
@@ -57,6 +64,6 @@ class CoroutineTestRule(
   }
 
   fun currentTestTime(): Long {
-    return testDispatcher.scheduler.currentTime
+    return testScheduler.currentTime
   }
 }

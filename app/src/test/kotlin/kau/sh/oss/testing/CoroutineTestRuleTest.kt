@@ -11,9 +11,12 @@ import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.currentTime
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.MethodOrderer
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestMethodOrder
 import org.junit.jupiter.api.extension.RegisterExtension
 import kotlin.time.Duration.Companion.seconds
 
@@ -22,8 +25,15 @@ class CoroutineTestRuleTest {
 
   @Nested
   inner class DefaultDispatcherTest {
+
     @RegisterExtension
     val testRule = CoroutineTestRule()
+
+    @Test
+    @DisplayName("assert test schedulers are the same")
+    fun test0() = runTest {
+      assertThat(testRule.testScheduler).isEqualTo(this.testScheduler)
+    }
 
     @Test
     @DisplayName("advancement respected by testScope + rule extension")
@@ -45,6 +55,13 @@ class CoroutineTestRuleTest {
     val testRule = CoroutineTestRule(injectedScheduler = customScheduler)
 
     @Test
+    @DisplayName("assert test schedulers are the same")
+    fun test0() = runTest {
+      assertThat(this.testScheduler).isEqualTo(customScheduler)
+      assertThat(testRule.testScheduler).isEqualTo(customScheduler)
+    }
+
+    @Test
     @DisplayName("advancement respected by testScope + rule extension")
     fun test1() = runTest {
       assertThat(currentTime).isEqualTo(0.seconds.inWholeMilliseconds)
@@ -63,9 +80,17 @@ class CoroutineTestRuleTest {
     @RegisterExtension
     val testRule = CoroutineTestRule(injectedDispatcher = customDispatcher)
 
+
+    @Test
+    @DisplayName("assert test schedulers are the same")
+    fun test0() = runTest {
+      assertThat(this.testScheduler).isEqualTo(customDispatcher.scheduler)
+      assertThat(testRule.testScheduler).isEqualTo(customDispatcher.scheduler)
+    }
+
     @Test
     @DisplayName("custom StandardTestDispatcher respects time advancement")
-    fun test1() = runTest(customDispatcher) {
+    fun test1() = runTest {
       assertThat(0.seconds.inWholeMilliseconds).isEqualTo(currentTime)
       advanceTimeBy(2.seconds)
       assertThat(2.seconds.inWholeMilliseconds).isEqualTo(currentTime)
@@ -81,8 +106,15 @@ class CoroutineTestRuleTest {
     val testRule = CoroutineTestRule(injectedScheduler = customDispatcher.scheduler)
 
     @Test
+    @DisplayName("assert test schedulers are the same")
+    fun test0() = runTest {
+      assertThat(this.testScheduler).isEqualTo(customDispatcher.scheduler)
+      assertThat(testRule.testScheduler).isEqualTo(customDispatcher.scheduler)
+    }
+
+    @Test
     @DisplayName("custom UnconfinedTestDispatcher respects time advancement")
-    fun test1() = runTest(customDispatcher) {
+    fun test1() = runTest {
       assertThat(0.seconds.inWholeMilliseconds).isEqualTo(currentTime)
       advanceTimeBy(2.seconds)
       // notice that we injected an UnconfinedTestDispatcher
@@ -92,23 +124,18 @@ class CoroutineTestRuleTest {
     }
   }
 
-  @Nested
-  inner class UnconfinedDispatcherTest {
-    private val customDispatcher = UnconfinedTestDispatcher()
-
-    @RegisterExtension
-    val testRule = CoroutineTestRule(injectedDispatcher = customDispatcher)
-
-    @Test
-    @DisplayName("custom UnconfinedTestDispatcher respects time advancement")
-    fun test1() = runTest(customDispatcher) {
-      assertThat(0.seconds.inWholeMilliseconds).isEqualTo(currentTime)
-      advanceTimeBy(2.seconds)
-      assertThat(2.seconds.inWholeMilliseconds).isEqualTo(currentTime)
-      assertThat(currentTime).isEqualTo(testRule.currentTestTime())
-    }
+  @Test
+  @DisplayName("cannot provide both a dispatcher and a scheduler")
+  fun test1() {
+    assertThatThrownBy {
+      CoroutineTestRule(
+          injectedDispatcher = UnconfinedTestDispatcher(),
+          injectedScheduler = TestCoroutineScheduler(),
+      )
+    }.isInstanceOf(IllegalArgumentException::class.java)
   }
 
+  @TestMethodOrder(MethodOrderer.MethodName::class)
   @Nested
   inner class CustomSchedulerUnconfinedDispatcherTest {
     private val customDispatcher = UnconfinedTestDispatcher()
@@ -117,17 +144,55 @@ class CoroutineTestRuleTest {
     @RegisterExtension
     val testRule = CoroutineTestRule(
         injectedScheduler = customScheduler,
-        injectedDispatcher = customDispatcher
     )
 
     @Test
+    @DisplayName("assert test schedulers are same with proper call")
+    fun test1() = runTest {
+      assertThat(this.testScheduler).isEqualTo(customScheduler)
+      assertThat(testRule.testScheduler).isEqualTo(customScheduler)
+    }
+
+    @Test
+    @DisplayName("assert test schedulers are not the same with improper call")
+    fun test2() = runTest(customDispatcher) { // DON'T DO THIS
+
+      // notice the testRule dispatcher will be different
+      assertThat(testRule.testDispatcher).isNotEqualTo(customDispatcher)
+
+
+      assertThat(testRule.testScheduler).isEqualTo(customScheduler)
+
+      // Notice your schedulers won't be the same either
+      // which is a big NO NO when using multiple dispatchers
+      assertThat(this.testScheduler).isEqualTo(customDispatcher.scheduler)
+      assertThat(customDispatcher.scheduler).isNotEqualTo(testRule.testScheduler)
+    }
+  }
+
+  @Nested
+  inner class ImproperExplicitCall {
+    private val customDispatcher = UnconfinedTestDispatcher()
+
+    @RegisterExtension
+    val testRule = CoroutineTestRule(injectedDispatcher = customDispatcher)
+
+    @Test
+    @DisplayName("assert test schedulers are the same")
+    fun test0() = runTest {
+      assertThat(this.testScheduler).isEqualTo(customDispatcher.scheduler)
+      assertThat(testRule.testScheduler).isEqualTo(customDispatcher.scheduler)
+    }
+
+    @Test
     @DisplayName("custom UnconfinedTestDispatcher respects time advancement")
-    fun test1() = runTest(customDispatcher) {
+    fun test1() = runTest {
       assertThat(0.seconds.inWholeMilliseconds).isEqualTo(currentTime)
       advanceTimeBy(2.seconds)
       assertThat(2.seconds.inWholeMilliseconds).isEqualTo(currentTime)
       assertThat(currentTime).isEqualTo(testRule.currentTestTime())
     }
   }
+
 }
 
