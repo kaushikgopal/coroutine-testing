@@ -18,7 +18,9 @@ import kotlin.time.Duration.Companion.seconds
 class TimingCacheTest {
 
   @RegisterExtension
-  val testRule = CoroutineTestRule(UnconfinedTestDispatcher())
+  val testRule = CoroutineTestRule()
+  // using CoroutineRule(UnfonfinedTestDispatcher()) will also make all tests works
+  // but the advancing of time would be unnecessary
 
   @DisplayName("adding an item should immediately put it in the cache")
   @Test
