@@ -4,6 +4,7 @@
 package kau.sh.oss.testing
 
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
@@ -35,9 +36,10 @@ class TimingCacheTest {
   fun test2() = runTest {
     val cacher = Cache(backgroundScope)
     cacher.put(3)
-    cacher.cache.contains(3)
+    assertThat(cacher.cache).contains(3)
     advanceTimeBy(6.seconds)
-    cacher.extendedCache.contains(3)
+    assertThat(cacher.cache).doesNotContain(3)
+    assertThat(cacher.extendedCache).contains(3)
   }
 
   @DisplayName("every 5 seconds, entire extended cache is cleared")
@@ -45,9 +47,9 @@ class TimingCacheTest {
   fun test3() = runTest {
     val cacher = Cache(backgroundScope)
     cacher.put(3)
-    cacher.cache.contains(3)
+    assertThat(cacher.cache).contains(3)
     advanceTimeBy(6.seconds)
-    cacher.extendedCache.contains(3)
+    assertThat(cacher.extendedCache).contains(3)
     advanceTimeBy(6.seconds)
     assertThat(cacher.extendedCache).isEmpty()
   }

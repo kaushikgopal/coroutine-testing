@@ -8,7 +8,7 @@ import org.jetbrains.annotations.VisibleForTesting
 import kotlin.time.Duration.Companion.seconds
 
 class Cache(
-  scope: CoroutineScope = CoroutineScope(Dispatchers.IO)
+  scope: CoroutineScope = CoroutineScope(Dispatchers.IO),
 ) {
   @VisibleForTesting
   val cache = mutableListOf<Int>()
@@ -34,7 +34,7 @@ class Cache(
   init {
     scope.launch {
       while (true) {
-          delay(5.seconds)
+        delay(5.seconds)
         extendedCache.clear()
 
         cache.forEach { extendedCache.add(it) }
