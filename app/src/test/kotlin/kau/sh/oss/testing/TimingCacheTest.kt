@@ -18,7 +18,7 @@ import kotlin.time.Duration.Companion.seconds
 class TimingCacheTest {
 
   @RegisterExtension
-  val testRule = CoroutineTestRule()
+  val testRule = CoroutineTestRule(UnconfinedTestDispatcher())
 
   @DisplayName("adding an item should immediately put it in the cache")
   @Test
@@ -27,29 +27,29 @@ class TimingCacheTest {
         // this = TestScope => test will never end
         backgroundScope,
     )
-    cacher.put(1)
-    assertThat(cacher.cache).containsExactly(1)
+    cacher.put("A")
+    assertThat(cacher.cache).containsExactly("A")
   }
 
   @DisplayName("after adding an item, in 5 seconds it should move from cache to extended cache")
   @Test
   fun test2() = runTest {
     val cacher = Cache(backgroundScope)
-    cacher.put(3)
-    assertThat(cacher.cache).contains(3)
+    cacher.put("C")
+    assertThat(cacher.cache).contains("C")
     advanceTimeBy(6.seconds)
-    assertThat(cacher.cache).doesNotContain(3)
-    assertThat(cacher.extendedCache).contains(3)
+    assertThat(cacher.cache).doesNotContain("C")
+    assertThat(cacher.extendedCache).contains("C")
   }
 
   @DisplayName("every 5 seconds, entire extended cache is cleared")
   @Test
   fun test3() = runTest {
     val cacher = Cache(backgroundScope)
-    cacher.put(3)
-    assertThat(cacher.cache).contains(3)
+    cacher.put("C")
+    assertThat(cacher.cache).contains("C")
     advanceTimeBy(6.seconds)
-    assertThat(cacher.extendedCache).contains(3)
+    assertThat(cacher.extendedCache).contains("C")
     advanceTimeBy(6.seconds)
     assertThat(cacher.extendedCache).isEmpty()
   }
@@ -58,20 +58,20 @@ class TimingCacheTest {
   @Test
   fun test4() = runTest {
     val cacher = Cache(backgroundScope)
-    cacher.put(1)
-    cacher.put(2)
-    cacher.put(3)
-    cacher.put(4)
-    cacher.put(5)
+    cacher.put("A")
+    cacher.put("B")
+    cacher.put("C")
+    cacher.put("D")
+    cacher.put("E")
     assertThat(cacher.cache.size).isEqualTo(5)
 
-    cacher.put(6)
-    assertThat(cacher.cache).contains(6, 5, 3, 4, 2)
-    assertThat(cacher.extendedCache).contains(1)
+    cacher.put("F")
+    assertThat(cacher.cache).contains("F", "E", "D", "C", "B")
+    assertThat(cacher.extendedCache).contains("A")
 
     advanceTimeBy(6.seconds)
     assertThat(cacher.cache).isEmpty()
-    assertThat(cacher.extendedCache).contains(6, 5, 3, 4, 2)
+    assertThat(cacher.extendedCache).contains("F", "E", "D", "C", "B")
   }
 }
 

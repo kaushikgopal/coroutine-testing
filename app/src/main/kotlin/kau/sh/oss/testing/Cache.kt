@@ -11,12 +11,12 @@ class Cache(
   scope: CoroutineScope = CoroutineScope(Dispatchers.IO),
 ) {
   @VisibleForTesting
-  val cache = mutableListOf<Int>()
+  val cache = mutableListOf<String>()
 
   @VisibleForTesting
-  val extendedCache = mutableListOf<Int>()
+  val extendedCache = mutableListOf<String>()
 
-  fun put(value: Int) {
+  fun put(value: String) {
     val cacheSize = cache.size
 
     if (cacheSize >= 5) {
@@ -42,6 +42,4 @@ class Cache(
       }
     }
   }
-
-
 }
