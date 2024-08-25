@@ -42,7 +42,6 @@ class StandardVsUnconfinedTestDispatcherTests {
     advanceTimeBy(1.seconds)
     runCurrent()
     assertThat(result).isEqualTo(42)
-
   }
 
   @DisplayName("test UnconfinedTestDispatcher")
