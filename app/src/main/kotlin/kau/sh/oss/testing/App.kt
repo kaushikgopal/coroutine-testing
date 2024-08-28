@@ -5,9 +5,9 @@ package kau.sh.oss.testing
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.seconds
 
@@ -18,14 +18,14 @@ class App(private val scope: CoroutineScope = CoroutineScope(Dispatchers.IO)) {
       return "Coroutine Testing examples - see tests"
     }
 
-  private val _stateFlow = MutableStateFlow(0)
-  val stateFlow: Flow<Int> = _stateFlow
+  private val _channel = Channel<Int>()
+  val flow = _channel.consumeAsFlow() // prob. receiveAsFlow()
 
   fun start() {
     scope.launch {
-      _stateFlow.emit(1)
+      _channel.send(1)
       delay(3.seconds)
-      _stateFlow.emit(10)
+      _channel.send(10)
     }
   }
 }
