@@ -23,8 +23,7 @@ class TimingCacheTest {
   @Test
   fun test1() = runTest {
     val cacher = Cache(
-        // this = TestScope => test will never end
-        backgroundScope,
+         this // TestScope => test will never end
     )
     cacher.put(1)
     assertThat(cacher.cache).containsExactly(1)
