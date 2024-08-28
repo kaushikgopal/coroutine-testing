@@ -30,11 +30,14 @@ class AppTest {
   @DisplayName("testing first item emitted")
   @Test
   fun test1() = runTest {
-    val app = App()
+    val app = App(this)
+    val items = mutableListOf<Int>()
+    launch { app.flow.collect { items.add(it) } }
+
     app.start()
-    app.flow.test {
-      assertThat(awaitItem()).isEqualTo(1)
-    }
+    runCurrent()
+
+    assertThat(items).contains(1)
   }
 
   @DisplayName("testing item emitted after delay")

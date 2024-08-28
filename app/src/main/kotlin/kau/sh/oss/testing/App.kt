@@ -13,10 +13,7 @@ import kotlin.time.Duration.Companion.seconds
 
 class App(private val scope: CoroutineScope = CoroutineScope(Dispatchers.IO)) {
 
-  val greeting: String
-    get() {
-      return "Coroutine Testing examples - see tests"
-    }
+  val greeting: String = "Coroutine Testing examples - see tests"
 
   private val _channel = Channel<Int>()
   val flow = _channel.consumeAsFlow() // prob. receiveAsFlow()
