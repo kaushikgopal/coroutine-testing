@@ -30,7 +30,7 @@ class AppTest {
   @DisplayName("testing first item emitted")
   @Test
   fun test1() = runTest {
-    val app = App(this)
+    val app = App()
     val items = mutableListOf<Int>()
     launch { app.flow.collect { items.add(it) } }
 
