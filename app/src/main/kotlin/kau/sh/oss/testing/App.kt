@@ -11,7 +11,9 @@ import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.seconds
 
-class App(private val scope: CoroutineScope = CoroutineScope(Dispatchers.IO)) {
+class App(
+  private val scope: CoroutineScope = CoroutineScope(Dispatchers.IO)
+) {
 
   val greeting: String = "Coroutine Testing examples - see tests"
 
