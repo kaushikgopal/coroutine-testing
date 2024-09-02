@@ -10,6 +10,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
@@ -24,50 +25,111 @@ import kotlin.time.Duration.Companion.seconds
 @OptIn(ExperimentalCoroutinesApi::class)
 class StandardVsUnconfinedTestDispatcherTests {
 
-  @DisplayName("test StandardTestDispatcher")
+  @DisplayName("test StandardTestDispatcher - runCurrent")
   @Test
   fun test1() = runTest(StandardTestDispatcher()) {
-    var result = "A"
+    var result = "X"
 
     launch {
+      result = "A"
       delay(1.seconds)
       result = "B"
-      delay(1.seconds)
       result = "C"
+      delay(2.seconds)
+      result = "D"
+    }
+
+    runCurrent()
+    assertThat(result).isEqualTo("A")
+  }
+
+  @DisplayName("test StandardTestDispatcher - advanceTime")
+  @Test
+  fun test2() = runTest(StandardTestDispatcher()) {
+    var result = "X"
+
+    launch {
+      result = "A"
+      delay(1.seconds)
+      result = "B"
+      result = "C"
+      delay(2.seconds)
+      result = "D"
+    }
+
+    advanceTimeBy(2.seconds)
+    assertThat(result).isEqualTo("C")
+  }
+
+  @DisplayName("test StandardTestDispatcher - advanceTime + runCurrent")
+  @Test
+  fun test3() = runTest(StandardTestDispatcher()) {
+    var result = "X"
+
+    launch {
+      result = "A"
+      delay(1.seconds)
+      result = "B"
+      result = "C"
+      delay(2.seconds)
+      result = "D"
     }
 
     advanceTimeBy(1.seconds)
-    runCurrent()
-    assertThat(result).isEqualTo("B")
+    assertThat(result).isEqualTo("A")
 
-    advanceTimeBy(1.seconds)
     runCurrent()
     assertThat(result).isEqualTo("C")
+
+    runCurrent()
+    assertThat(result).isEqualTo("C")
+
+    advanceTimeBy(2.seconds)
+    runCurrent() // needed (or advance the time a little more than 2s)
+    assertThat(result).isEqualTo("D")
+  }
+
+  @DisplayName("test StandardTestDispatcher - advanceUntilIdle")
+  @Test
+  fun test4() = runTest(StandardTestDispatcher()) {
+    var result = "X"
+
+    launch {
+      result = "A"
+      delay(1.seconds)
+      result = "B"
+      result = "C"
+      delay(2.seconds)
+      result = "D"
+    }
+
+    advanceUntilIdle()
+    assertThat(result).isEqualTo("D")
   }
 
   @DisplayName("test UnconfinedTestDispatcher")
   @Test
-  fun test2() = runTest(UnconfinedTestDispatcher()) {
-    var result = "A"
+  fun test5() = runTest(UnconfinedTestDispatcher()) {
+    var result = "X"
 
     val job = launch {
       delay(1.seconds)
-      result = "B"
+      result = "A"
       delay(1.seconds)
-      result = "C"
+      result = "B"
     }
 
     // advanceTimeBy(1.seconds)
     advanceTimeBy(1.seconds)
 
     // the job doesn't launch automatically since the coroutine hasn't "started" yet
-    assertThat(result).isEqualTo("A")
+    assertThat(result).isEqualTo("X")
 
     // this forces the job to start + complete
     job.join()
 
     // notice how the result B is ignored
-    assertThat(result).isEqualTo("C")
+    assertThat(result).isEqualTo("B")
   }
 
 }
