@@ -123,30 +123,30 @@ class StandardVsUnconfinedTestDispatcherTests {
     assertThat(result).isEqualTo("D")
   }
 
-  @DisplayName("test UnconfinedTestDispatcher")
+  @DisplayName("test UnconfinedTestDispatcher - basic")
   @Test
-  fun test5() = runTest(UnconfinedTestDispatcher()) {
+  fun test10() = runTest(UnconfinedTestDispatcher()) {
     var result = "X"
 
-    val job = launch {
-      delay(1.seconds)
+    launch {
       result = "A"
       delay(1.seconds)
       result = "B"
+      result = "C"
+      delay(2.seconds)
+      result = "D"
     }
 
-    // advanceTimeBy(1.seconds)
+    // notice you don't need a runCurrent to get the first value
+    // courtesy: https://github.com/Kotlin/kotlinx.coroutines/blob/d38672a53ccdfda6319ab5f11669af8ad96d60a5/kotlinx-coroutines-test/common/src/TestCoroutineDispatchers.kt#L15
+    assertThat(result).isEqualTo("A")
+
+    // now it'll behave like StandardTestDispatcher
     advanceTimeBy(1.seconds)
-
-    // the job doesn't launch automatically since the coroutine hasn't "started" yet
-    assertThat(result).isEqualTo("X")
-
-    // this forces the job to start + complete
-    job.join()
-
-    // notice how the result B is ignored
-    assertThat(result).isEqualTo("B")
+    runCurrent()
+    assertThat(result).isEqualTo("C")
+    advanceTimeBy(2.seconds.plus(1.milliseconds))
+    assertThat(result).isEqualTo("D")
   }
-
 }
 
