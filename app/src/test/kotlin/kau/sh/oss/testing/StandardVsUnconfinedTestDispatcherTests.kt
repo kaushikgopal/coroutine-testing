@@ -12,6 +12,7 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.yield
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.DisplayName
@@ -26,47 +27,47 @@ class StandardVsUnconfinedTestDispatcherTests {
   @DisplayName("test StandardTestDispatcher")
   @Test
   fun test1() = runTest(StandardTestDispatcher()) {
-    var result = 0
+    var result = "A"
 
     launch {
       delay(1.seconds)
-      result = 9
+      result = "B"
       delay(1.seconds)
-      result = 42
+      result = "C"
     }
 
     advanceTimeBy(1.seconds)
     runCurrent()
-    assertThat(result).isEqualTo(9)
+    assertThat(result).isEqualTo("B")
 
     advanceTimeBy(1.seconds)
     runCurrent()
-    assertThat(result).isEqualTo(42)
+    assertThat(result).isEqualTo("C")
   }
 
   @DisplayName("test UnconfinedTestDispatcher")
   @Test
   fun test2() = runTest(UnconfinedTestDispatcher()) {
-    var result = 0
+    var result = "A"
 
     val job = launch {
       delay(1.seconds)
-      result = 42
+      result = "B"
       delay(1.seconds)
+      result = "C"
     }
 
-    // the job is complete and therefore result is set
-    // if you add advanceTimeBy(2.seconds), the test will confusingly pass
-    // but this is not because time has been advanced in anyway
-    // but rather because the job is finished
+    // advanceTimeBy(1.seconds)
+    advanceTimeBy(1.seconds)
 
-    assertThat(result)
-        .isNotEqualTo(42)
-        .isEqualTo(0)
+    // the job doesn't launch automatically since the coroutine hasn't "started" yet
+    assertThat(result).isEqualTo("A")
 
+    // this forces the job to start + complete
     job.join()
 
-    assertThat(result).isEqualTo(42)
+    // notice how the result B is ignored
+    assertThat(result).isEqualTo("C")
   }
 
 }
