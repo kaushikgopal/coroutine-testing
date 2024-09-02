@@ -76,16 +76,32 @@ class StandardVsUnconfinedTestDispatcherTests {
     }
 
     advanceTimeBy(1.seconds)
-    assertThat(result).isEqualTo("A")
+          // result A is pushed
+          // B & C are "scheduled"
+    assertThat(result)
+        .isEqualTo("A")
 
     runCurrent()
-    assertThat(result).isEqualTo("C")
+          // B & C are pushed
+          // but no time advancement really
+    assertThat(result)
+        .isEqualTo("C")
 
     runCurrent()
-    assertThat(result).isEqualTo("C")
+          // try that again for safe measure
+          // result is same, and no time advancement
+    assertThat(result)
+        .isEqualTo("C")
+
 
     advanceTimeBy(2.seconds)
-    runCurrent() // needed (or advance the time a little more than 2s)
+          // D is scheduled (but not pushed)
+    assertThat(result)
+        .isEqualTo("C")
+
+    runCurrent()
+        // D is now pushed
+
     assertThat(result).isEqualTo("D")
   }
 
